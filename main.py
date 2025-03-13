@@ -13,21 +13,89 @@ from PyQt6.QtWidgets import (
     QApplication,
     QMessageBox,
     QFileDialog,
-    QTabWidget
+    QTabWidget,
+    QFrame
 )
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QDoubleValidator
+from PyQt6.QtGui import QDoubleValidator, QFont, QPalette, QColor
+
+class ModernButton(QPushButton):
+    def __init__(self, text, parent=None):
+        super().__init__(text, parent)
+        self.setStyleSheet("""
+            QPushButton {
+                background-color: #2196F3;
+                color: white;
+                border: none;
+                padding: 8px 16px;
+                border-radius: 4px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #1976D2;
+            }
+            QPushButton:pressed {
+                background-color: #0D47A1;
+            }
+            QPushButton:disabled {
+                background-color: #BDBDBD;
+            }
+        """)
+
+class ModernLineEdit(QLineEdit):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setStyleSheet("""
+            QLineEdit {
+                padding: 8px;
+                border: 2px solid #E0E0E0;
+                border-radius: 4px;
+                background-color: white;
+            }
+            QLineEdit:focus {
+                border: 2px solid #2196F3;
+            }
+        """)
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Satış Fiyat Hesaplayıcı")
-        self.setGeometry(100, 100, 600, 400)
+        self.setGeometry(100, 100, 800, 600)
+        self.setStyleSheet("""
+            QMainWindow {
+                background-color: #F5F5F5;
+            }
+            QTabWidget::pane {
+                border: none;
+                background-color: white;
+                border-radius: 8px;
+            }
+            QTabBar::tab {
+                background-color: #E0E0E0;
+                color: #424242;
+                padding: 8px 16px;
+                margin-right: 2px;
+                border-top-left-radius: 4px;
+                border-top-right-radius: 4px;
+            }
+            QTabBar::tab:selected {
+                background-color: white;
+                color: #2196F3;
+                font-weight: bold;
+            }
+            QLabel {
+                color: #424242;
+                font-size: 14px;
+            }
+        """)
         
         # Ana widget ve layout
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
         layout = QVBoxLayout(central_widget)
+        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setSpacing(20)
         
         # Sekme widget'ı oluştur
         self.tabs = QTabWidget()
@@ -47,99 +115,134 @@ class MainWindow(QMainWindow):
         
     def setup_manual_tab(self):
         layout = QVBoxLayout(self.tab_manual)
+        layout.setContentsMargins(30, 30, 30, 30)
+        layout.setSpacing(20)
+        
+        # Kart görünümü için frame
+        card = QFrame()
+        card.setStyleSheet("""
+            QFrame {
+                background-color: white;
+                border-radius: 8px;
+                padding: 20px;
+            }
+        """)
+        card_layout = QVBoxLayout(card)
+        layout.addWidget(card)
         
         # Girdi alanları için grid layout
         grid = QGridLayout()
-        layout.addLayout(grid)
+        grid.setSpacing(15)
+        card_layout.addLayout(grid)
         
-        # Alış Fiyatı
-        self.purchase_label = QLabel("Alış Fiyatı (₺):")
-        self.purchase_entry = QLineEdit()
-        grid.addWidget(self.purchase_label, 0, 0)
-        grid.addWidget(self.purchase_entry, 0, 1)
+        # Input alanları
+        input_fields = [
+            ("Alış Fiyatı (₺):", "purchase"),
+            ("Komisyon (%):", "commission"),
+            ("Kargo (₺):", "shipping"),
+            ("Kar (%):", "margin")
+        ]
         
-        # Pazaryeri Komisyonu
-        self.commission_label = QLabel("Komisyon (%):")
-        self.commission_entry = QLineEdit()
-        grid.addWidget(self.commission_label, 1, 0)
-        grid.addWidget(self.commission_entry, 1, 1)
+        for i, (label_text, field_name) in enumerate(input_fields):
+            label = QLabel(label_text)
+            label.setAlignment(Qt.AlignmentFlag.AlignRight)
+            entry = ModernLineEdit()
+            setattr(self, f"{field_name}_label", label)
+            setattr(self, f"{field_name}_entry", entry)
+            
+            grid.addWidget(label, i, 0)
+            grid.addWidget(entry, i, 1)
+            
+            # Validator ve hizalama
+            entry.setValidator(QDoubleValidator())
+            entry.setAlignment(Qt.AlignmentFlag.AlignRight)
+            entry.setText("0")
+            
+            # Enter tuşu bağlantısı
+            entry.returnPressed.connect(self.calculate_sale_price)
         
-        # Kargo Ücreti
-        self.shipping_label = QLabel("Kargo (₺):")
-        self.shipping_entry = QLineEdit()
-        grid.addWidget(self.shipping_label, 2, 0)
-        grid.addWidget(self.shipping_entry, 2, 1)
-        
-        # Kar Oranı
-        self.margin_label = QLabel("Kar (%):")
-        self.margin_entry = QLineEdit()
-        grid.addWidget(self.margin_label, 3, 0)
-        grid.addWidget(self.margin_entry, 3, 1)
+        # Varsayılan değerler
+        self.shipping_entry.setText("30")
+        self.commission_entry.setText("10")
+        self.margin_entry.setText("20")
         
         # Hesaplama Butonu
         button_layout = QHBoxLayout()
-        self.calculate_btn = QPushButton("Satış Fiyatı Hesapla")
+        self.calculate_btn = ModernButton("Satış Fiyatı Hesapla")
         self.calculate_btn.clicked.connect(self.calculate_sale_price)
+        button_layout.addStretch()
         button_layout.addWidget(self.calculate_btn)
-        layout.addLayout(button_layout)
+        button_layout.addStretch()
+        card_layout.addLayout(button_layout)
         
-        # Sonuçlar
-        # Komisyon QLabel'ları
-        self.result_widget = QWidget()
-        self.result_layout = QVBoxLayout(self.result_widget)
-        layout.addWidget(self.result_widget)
+        # Sonuç kartı
+        result_card = QFrame()
+        result_card.setStyleSheet("""
+            QFrame {
+                background-color: #E3F2FD;
+                border-radius: 8px;
+                padding: 20px;
+            }
+            QLabel {
+                color: #1565C0;
+                font-size: 16px;
+                font-weight: bold;
+            }
+        """)
+        result_layout = QVBoxLayout(result_card)
         
         self.commission_result = QLabel("Pazaryeri Komisyonu: ₺ 0,00")
         self.shipping_result = QLabel("Kargo: ₺ 0,00")
         self.sale_price = QLabel("Satış Fiyatı: ₺ 0,00")
         
-        self.result_layout.addWidget(self.commission_result)
-        self.result_layout.addWidget(self.shipping_result)
-        self.result_layout.addWidget(self.sale_price)
-        
-        # Doğrulayıcıları ekleyelim - sadece sayılara izin ver
-        double_validator = QDoubleValidator()
-        double_validator.setNotation(QDoubleValidator.Notation.StandardNotation)
-        
-        for lineEdit in (self.purchase_entry, self.commission_entry, 
-                         self.shipping_entry, self.margin_entry):
-            lineEdit.setValidator(double_validator)
-            lineEdit.setAlignment(Qt.AlignmentFlag.AlignRight)
-            # Varsayılan değerler
-            lineEdit.setText("0")
-            
-        # Birkaç varsayılan değer ekleyelim
-        self.shipping_entry.setText("30")  # Varsayılan kargo ücreti
-        self.commission_entry.setText("10")  # Genel komisyon
-        self.margin_entry.setText("20")  # Örnek kar marjı
-        
-        # Etiketleri sağa hizala
-        for label in (self.purchase_label, self.commission_label, 
-                      self.shipping_label, self.margin_label):
-            label.setAlignment(Qt.AlignmentFlag.AlignRight)
-            
-        # Sonuç etiketlerini sağa hizala
         for result in (self.commission_result, self.shipping_result, self.sale_price):
             result.setAlignment(Qt.AlignmentFlag.AlignRight)
+            result_layout.addWidget(result)
         
-        # Enter tuşuyla hesaplama
-        for entry in (self.purchase_entry, self.commission_entry, 
-                      self.shipping_entry, self.margin_entry):
-            entry.returnPressed.connect(self.calculate_sale_price)
-    
+        layout.addWidget(result_card)
+        layout.addStretch()
+        
     def setup_excel_tab(self):
         layout = QVBoxLayout(self.tab_excel)
+        layout.setContentsMargins(30, 30, 30, 30)
+        layout.setSpacing(20)
+        
+        # Excel kartı
+        excel_card = QFrame()
+        excel_card.setStyleSheet("""
+            QFrame {
+                background-color: white;
+                border-radius: 8px;
+                padding: 20px;
+            }
+        """)
+        excel_layout = QVBoxLayout(excel_card)
         
         # Excel dosyası yükleme düğmesi
-        self.load_excel_btn = QPushButton("Excel Dosyası Yükle")
+        self.load_excel_btn = ModernButton("Excel Dosyası Yükle")
         self.load_excel_btn.clicked.connect(self.load_excel_file)
-        layout.addWidget(self.load_excel_btn)
+        excel_layout.addWidget(self.load_excel_btn)
         
         # Yüklenen dosya bilgisi
         self.excel_info_label = QLabel("Dosya yüklenmedi")
-        layout.addWidget(self.excel_info_label)
+        self.excel_info_label.setStyleSheet("color: #757575; font-size: 14px;")
+        excel_layout.addWidget(self.excel_info_label)
         
-        # Varsayılan sütun isimleri için bilgi
+        # Bilgi kartı
+        info_card = QFrame()
+        info_card.setStyleSheet("""
+            QFrame {
+                background-color: #FFF3E0;
+                border-radius: 8px;
+                padding: 20px;
+            }
+            QLabel {
+                color: #E65100;
+                font-size: 14px;
+            }
+        """)
+        info_layout = QVBoxLayout(info_card)
+        
         info_text = """
         Excel dosyası aşağıdaki sütunları içermelidir:
         - Ürün Adı (isteğe bağlı)
@@ -149,22 +252,27 @@ class MainWindow(QMainWindow):
         - Kar (isteğe bağlı, varsayılan: %20)
         """
         self.column_info = QLabel(info_text)
-        layout.addWidget(self.column_info)
+        info_layout.addWidget(self.column_info)
+        excel_layout.addWidget(info_card)
         
         # İşlem düğmesi
-        self.process_excel_btn = QPushButton("Excel Dosyasını İşle ve Sonuçları Kaydet")
+        self.process_excel_btn = ModernButton("Excel Dosyasını İşle ve Sonuçları Kaydet")
         self.process_excel_btn.clicked.connect(self.process_excel_file)
-        self.process_excel_btn.setEnabled(False)  # Başlangıçta devre dışı
-        layout.addWidget(self.process_excel_btn)
+        self.process_excel_btn.setEnabled(False)
+        excel_layout.addWidget(self.process_excel_btn)
         
         # Sonuç bilgisi
         self.excel_result_label = QLabel("")
-        layout.addWidget(self.excel_result_label)
+        self.excel_result_label.setStyleSheet("color: #2E7D32; font-size: 14px;")
+        excel_layout.addWidget(self.excel_result_label)
+        
+        layout.addWidget(excel_card)
+        layout.addStretch()
         
         # Varsayılan değerleri oluştur
         self.excel_file_path = None
         self.excel_data = None
-        
+
     def load_excel_file(self):
         """Excel dosyası yükleme fonksiyonu"""
         options = QFileDialog.Options()
@@ -328,6 +436,11 @@ class MainWindow(QMainWindow):
 
 def main():
     app = QApplication(sys.argv)
+    
+    # Uygulama genelinde font ayarı
+    font = QFont("Segoe UI", 10)
+    app.setFont(font)
+    
     window = MainWindow()
     window.show()
     sys.exit(app.exec())
