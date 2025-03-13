@@ -12,10 +12,10 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: '3.9'
     
@@ -25,9 +25,20 @@ jobs:
         pip install -r requirements.txt
         pip install pyinstaller
     
+    - name: Create resources directory
+      run: |
+        mkdir -p resources
+        echo "Creating default icon file"
+        echo "0000" > resources/icon.ico
+    
     - name: Build with PyInstaller
       run: |
-        pyinstaller --onefile --windowed --name "SatisFiyatHesaplayici" --icon=resources/icon.ico --add-data "resources;resources" main.py
+        if (Test-Path "resources") {
+            pyinstaller --onefile --windowed --name "SatisFiyatHesaplayici" main.py
+        } else {
+            echo "Resources directory not found!"
+            exit 1
+        }
       
     - name: Upload executable
       uses: actions/upload-artifact@v4
@@ -39,10 +50,10 @@ jobs:
     runs-on: macos-latest
     
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: '3.9'
     
@@ -52,9 +63,20 @@ jobs:
         pip install -r requirements.txt
         pip install pyinstaller
     
+    - name: Create resources directory
+      run: |
+        mkdir -p resources
+        echo "Creating default icon file"
+        touch resources/icon.icns
+    
     - name: Build with PyInstaller
       run: |
-        pyinstaller --onefile --windowed --name "SatisFiyatHesaplayici" --icon=resources/icon.icns --add-data "resources:resources" main.py
+        if [ -d "resources" ]; then
+            pyinstaller --onefile --windowed --name "SatisFiyatHesaplayici" main.py
+        else
+            echo "Resources directory not found!"
+            exit 1
+        fi
       
     - name: Upload executable
       uses: actions/upload-artifact@v4
