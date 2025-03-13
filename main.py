@@ -51,6 +51,8 @@ class ModernLineEdit(QLineEdit):
                 border: 2px solid #E0E0E0;
                 border-radius: 4px;
                 background-color: white;
+                color: #000000;
+                font-size: 14px;
             }
             QLineEdit:focus {
                 border: 2px solid #2196F3;
