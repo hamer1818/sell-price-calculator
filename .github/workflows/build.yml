@@ -30,7 +30,7 @@ jobs:
         pyinstaller --onefile --windowed --name "SatisFiyatHesaplayici" --icon=resources/icon.ico --add-data "resources;resources" main.py
       
     - name: Upload executable
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: SatisFiyatHesaplayici-Windows
         path: dist/SatisFiyatHesaplayici.exe
@@ -57,7 +57,7 @@ jobs:
         pyinstaller --onefile --windowed --name "SatisFiyatHesaplayici" --icon=resources/icon.icns --add-data "resources:resources" main.py
       
     - name: Upload executable
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: SatisFiyatHesaplayici-MacOS
         path: dist/SatisFiyatHesaplayici
