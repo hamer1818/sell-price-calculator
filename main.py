@@ -233,9 +233,10 @@ class MainWindow(QMainWindow):
                 # Hesaplamalar
                 commission_amount = purchase_price * commission / 100
                 total_with_commission = purchase_price + commission_amount
-                # Kargo sabit bir ücret olarak ekleniyor
-                total_with_shipping = total_with_commission + shipping
-                sale_price = total_with_shipping * (1 + margin / 100)
+                # Önce kar hesaplanır
+                total_with_margin = total_with_commission * (1 + margin / 100)
+                # En son kargo eklenir
+                sale_price = total_with_margin + shipping
                 
                 # Sonuçları DataFrame'e ekle
                 result_df.at[index, "Komisyon Tutarı"] = commission_amount
@@ -309,9 +310,10 @@ class MainWindow(QMainWindow):
             # Hesaplamalar
             commission_amount = purchase * commission / 100
             total_with_commission = purchase + commission_amount
-            # Kargo sabit bir ücret olarak ekleniyor
-            total_with_shipping = total_with_commission + shipping
-            sale_price = total_with_shipping * (1 + margin / 100)
+            # Önce kar hesaplanır
+            total_with_margin = total_with_commission * (1 + margin / 100)
+            # En son kargo eklenir
+            sale_price = total_with_margin + shipping
             
             # Türkiye'deki para formatı için virgül kullan
             def tr_fmt(val):
