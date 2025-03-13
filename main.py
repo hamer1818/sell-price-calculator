@@ -64,11 +64,11 @@ class MainWindow(QMainWindow):
         grid.addWidget(self.commission_label, 1, 0)
         grid.addWidget(self.commission_entry, 1, 1)
         
-        # KDV Oranı
-        self.tax_label = QLabel("KDV (%):")
-        self.tax_entry = QLineEdit()
-        grid.addWidget(self.tax_label, 2, 0)
-        grid.addWidget(self.tax_entry, 2, 1)
+        # Kargo Ücreti
+        self.shipping_label = QLabel("Kargo (₺):")
+        self.shipping_entry = QLineEdit()
+        grid.addWidget(self.shipping_label, 2, 0)
+        grid.addWidget(self.shipping_entry, 2, 1)
         
         # Kar Oranı
         self.margin_label = QLabel("Kar (%):")
@@ -90,11 +90,11 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.result_widget)
         
         self.commission_result = QLabel("Pazaryeri Komisyonu: ₺ 0,00")
-        self.tax_result = QLabel("KDV: ₺ 0,00")
+        self.shipping_result = QLabel("Kargo: ₺ 0,00")
         self.sale_price = QLabel("Satış Fiyatı: ₺ 0,00")
         
         self.result_layout.addWidget(self.commission_result)
-        self.result_layout.addWidget(self.tax_result)
+        self.result_layout.addWidget(self.shipping_result)
         self.result_layout.addWidget(self.sale_price)
         
         # Doğrulayıcıları ekleyelim - sadece sayılara izin ver
@@ -102,29 +102,29 @@ class MainWindow(QMainWindow):
         double_validator.setNotation(QDoubleValidator.Notation.StandardNotation)
         
         for lineEdit in (self.purchase_entry, self.commission_entry, 
-                         self.tax_entry, self.margin_entry):
+                         self.shipping_entry, self.margin_entry):
             lineEdit.setValidator(double_validator)
             lineEdit.setAlignment(Qt.AlignmentFlag.AlignRight)
             # Varsayılan değerler
             lineEdit.setText("0")
             
         # Birkaç varsayılan değer ekleyelim
-        self.tax_entry.setText("18")  # Genel KDV oranı
+        self.shipping_entry.setText("30")  # Varsayılan kargo ücreti
         self.commission_entry.setText("10")  # Genel komisyon
         self.margin_entry.setText("20")  # Örnek kar marjı
         
         # Etiketleri sağa hizala
         for label in (self.purchase_label, self.commission_label, 
-                      self.tax_label, self.margin_label):
+                      self.shipping_label, self.margin_label):
             label.setAlignment(Qt.AlignmentFlag.AlignRight)
             
         # Sonuç etiketlerini sağa hizala
-        for result in (self.commission_result, self.tax_result, self.sale_price):
+        for result in (self.commission_result, self.shipping_result, self.sale_price):
             result.setAlignment(Qt.AlignmentFlag.AlignRight)
         
         # Enter tuşuyla hesaplama
         for entry in (self.purchase_entry, self.commission_entry, 
-                      self.tax_entry, self.margin_entry):
+                      self.shipping_entry, self.margin_entry):
             entry.returnPressed.connect(self.calculate_sale_price)
     
     def setup_excel_tab(self):
@@ -145,7 +145,7 @@ class MainWindow(QMainWindow):
         - Ürün Adı (isteğe bağlı)
         - Alış Fiyatı (gerekli)
         - Komisyon (isteğe bağlı, varsayılan: %10)
-        - KDV (isteğe bağlı, varsayılan: %18)
+        - Kargo (isteğe bağlı, varsayılan: 30₺)
         - Kar (isteğe bağlı, varsayılan: %20)
         """
         self.column_info = QLabel(info_text)
@@ -216,7 +216,7 @@ class MainWindow(QMainWindow):
         try:
             # Varsayılan değerleri hazırla
             default_commission = 10.0
-            default_tax = 18.0
+            default_shipping = 30.0
             default_margin = 20.0
             
             # Yeni DataFrame oluştur
@@ -227,19 +227,19 @@ class MainWindow(QMainWindow):
                 # Gerekli değerleri al, yoksa varsayılanları kullan
                 purchase_price = row["Alış Fiyatı"]
                 commission = row.get("Komisyon", default_commission)
-                tax = row.get("KDV", default_tax)
+                shipping = row.get("Kargo", default_shipping)
                 margin = row.get("Kar", default_margin)
                 
                 # Hesaplamalar
                 commission_amount = purchase_price * commission / 100
                 total_with_commission = purchase_price + commission_amount
-                tax_amount = total_with_commission * tax / 100
-                total_with_tax = total_with_commission + tax_amount
-                sale_price = total_with_tax * (1 + margin / 100)
+                # Kargo sabit bir ücret olarak ekleniyor
+                total_with_shipping = total_with_commission + shipping
+                sale_price = total_with_shipping * (1 + margin / 100)
                 
                 # Sonuçları DataFrame'e ekle
                 result_df.at[index, "Komisyon Tutarı"] = commission_amount
-                result_df.at[index, "KDV Tutarı"] = tax_amount
+                result_df.at[index, "Kargo Tutarı"] = shipping
                 result_df.at[index, "Satış Fiyatı"] = sale_price
             
             # Çıktı dosyası için isim oluştur
@@ -273,9 +273,9 @@ class MainWindow(QMainWindow):
                     
                     # Para kolonlarına para formatı uygula
                     for col_idx, col_name in enumerate(result_df.columns):
-                        if col_name in ["Alış Fiyatı", "Komisyon Tutarı", "KDV Tutarı", "Satış Fiyatı"]:
+                        if col_name in ["Alış Fiyatı", "Komisyon Tutarı", "Kargo Tutarı", "Satış Fiyatı"]:
                             worksheet.set_column(col_idx, col_idx, 15, money_format)
-                        elif col_name in ["Komisyon", "KDV", "Kar"]:
+                        elif col_name in ["Komisyon", "Kar"]:
                             worksheet.set_column(col_idx, col_idx, 10, percent_format)
                 
                 self.excel_result_label.setText(f"Sonuçlar başarıyla kaydedildi: {os.path.basename(file_path)}")
@@ -297,7 +297,7 @@ class MainWindow(QMainWindow):
             # Girdileri oku
             purchase = float(self.purchase_entry.text().replace(',', '.'))
             commission = float(self.commission_entry.text().replace(',', '.'))
-            tax = float(self.tax_entry.text().replace(',', '.'))
+            shipping = float(self.shipping_entry.text().replace(',', '.'))
             margin = float(self.margin_entry.text().replace(',', '.'))
             
             # Eğer alış fiyatı 0 ise uyarı göster
@@ -309,16 +309,16 @@ class MainWindow(QMainWindow):
             # Hesaplamalar
             commission_amount = purchase * commission / 100
             total_with_commission = purchase + commission_amount
-            tax_amount = total_with_commission * tax / 100
-            total_with_tax = total_with_commission + tax_amount
-            sale_price = total_with_tax * (1 + margin / 100)
+            # Kargo sabit bir ücret olarak ekleniyor
+            total_with_shipping = total_with_commission + shipping
+            sale_price = total_with_shipping * (1 + margin / 100)
             
             # Türkiye'deki para formatı için virgül kullan
             def tr_fmt(val):
                 return f"{val:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
             
             self.commission_result.setText(f"Pazaryeri Komisyonu: ₺ {tr_fmt(commission_amount)}")
-            self.tax_result.setText(f"KDV: ₺ {tr_fmt(tax_amount)}")
+            self.shipping_result.setText(f"Kargo: ₺ {tr_fmt(shipping)}")
             self.sale_price.setText(f"Satış Fiyatı: ₺ {tr_fmt(sale_price)}")
             
         except ValueError as e:
