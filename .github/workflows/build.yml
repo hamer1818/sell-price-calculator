@@ -32,12 +32,6 @@ jobs:
         pip install -r requirements.txt
         pip install pyinstaller
     
-    - name: Create resources directory
-      run: |
-        mkdir -p resources
-        echo "Creating default icon file"
-        echo "0000" > resources/icon.ico
-    
     - name: Build with PyInstaller
       run: |
         if (Test-Path "resources") {
@@ -69,12 +63,6 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         pip install pyinstaller
-    
-    - name: Create resources directory
-      run: |
-        mkdir -p resources
-        echo "Creating default icon file"
-        touch resources/icon.icns
     
     - name: Build with PyInstaller
       run: |
